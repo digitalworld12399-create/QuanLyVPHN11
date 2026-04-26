@@ -1,1 +1,16 @@
+# 1. Bảo mật: KHÔNG đẩy file chứa mã bí mật của Google lên GitHub
+credentials.json
 
+# 2. Loại bỏ các thư mục rác của Python (tự sinh ra khi chạy)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# 3. Loại bỏ các tệp cấu hình riêng của Streamlit
+.streamlit/config.toml
+
+# 4. Loại bỏ các tệp rác của hệ điều hành
+.DS_Store
+Thumbs.db
