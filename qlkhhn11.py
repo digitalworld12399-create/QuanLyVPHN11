@@ -22,23 +22,22 @@ st.markdown("""
         border: none;
         padding: 10px;
     }
-    .stButton>button:hover { border: 1px solid black; color: white; }
+    .stButton>button:hover { background-color: #bc8a5f; color: white; border: 1px solid black; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. HÀM KẾT NỐI GOOGLE API (ƯU TIÊN GITHUB SECRETS) ---
+# --- 2. HÀM KẾT NỐI GOOGLE API (HỖ TRỢ GITHUB SECRETS & LOCAL) ---
 def get_gspread_client():
     try:
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # Thử lấy cấu hình từ GitHub Secrets / Streamlit Cloud Secrets
+        # 1. Thử lấy từ GitHub Secrets / Streamlit Cloud
         creds_json = os.environ.get("GCP_SERVICE_ACCOUNT_JSON")
         
         if creds_json:
-            # Nếu chạy trên Server (GitHub/Streamlit Cloud)
             creds_info = json.loads(creds_json)
+        # 2. Thử lấy từ file local nếu chạy trên máy tính
         elif os.path.exists("credentials.json"):
-            # Nếu chạy local trên máy tính
             with open("credentials.json") as f:
                 creds_info = json.load(f)
         else:
@@ -60,7 +59,6 @@ SHEET_IDS = {
     "Nguyễn Đoàn Quang Lực": "1i__Mh1IXmtjmGd3kWY1ZpDPpAGLq9bpZybmOxEYF8Fo"
 }
 
-# Hàm tạo khung lịch mặc định
 def create_default_df():
     return pd.DataFrame({
         "Thứ": ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"],
@@ -90,8 +88,8 @@ else:
     # Sidebar điều hướng
     st.sidebar.title("🛠 ĐIỀU HÀNH")
     
-    # NÚT KIỂM TRA CẬP NHẬT (Theo yêu cầu)
-    st.sidebar.link_button("🚀 Kiểm tra cập nhật", "https://github.com/your-username/your-repo", use_container_width=True)
+    # Nút dẫn link cập nhật theo yêu cầu
+    st.sidebar.link_button("🚀 Kiểm tra cập nhật", "https://github.com/digitalworld12399-create/QuanLyVPHN11", use_container_width=True)
     
     menu = st.sidebar.radio("Chức năng chính", ["📅 Lịch Tuần (T2-T7)", "💰 Công Nợ", "📦 Sản Phẩm"])
     
@@ -102,7 +100,6 @@ else:
     if menu == "📅 Lịch Tuần (T2-T7)":
         st.title("📅 QUẢN LÝ LỊCH CÔNG TÁC")
         
-        # Bộ lọc
         c1, c2 = st.columns(2)
         with c1:
             target = st.selectbox("👤 Chọn Cán bộ/Đơn vị:", list(SHEET_IDS.keys()))
@@ -114,19 +111,14 @@ else:
         client = get_gspread_client()
         if client:
             try:
-                # Mở Sheet
                 sh = client.open_by_key(SHEET_IDS[target])
                 worksheet = sh.get_worksheet(0)
                 data = worksheet.get_all_records()
                 
-                # Chuyển đổi dữ liệu
-                if not data:
-                    df = create_default_df()
-                else:
-                    df = pd.DataFrame(data)
+                df = pd.DataFrame(data) if data else create_default_df()
 
                 st.subheader(f"📝 Bảng chỉnh sửa: {target}")
-                st.info("Nhấp đúp vào ô để sửa. Dữ liệu từ Thứ 2 đến Thứ 7.")
+                st.info("Nhấp đúp vào ô để sửa nội dung lịch từ Thứ 2 đến Thứ 7.")
 
                 # Trình chỉnh sửa dữ liệu
                 edited_df = st.data_editor(
@@ -142,20 +134,18 @@ else:
                     }
                 )
 
-                # Nút lưu
                 if st.button("💾 LƯU CẬP NHẬT LÊN GOOGLE SHEETS"):
                     with st.spinner("Đang đồng bộ dữ liệu..."):
-                        # Xóa và ghi lại toàn bộ để đảm bảo đồng bộ
                         worksheet.clear()
-                        # Ghi tiêu đề và nội dung
+                        # Ghi lại tiêu đề và dữ liệu mới
                         worksheet.update([edited_df.columns.values.tolist()] + edited_df.fillna("").values.tolist())
                         st.success(f"✅ Đã cập nhật thành công lịch của {target}!")
                         st.balloons()
 
             except Exception as e:
-                st.error(f"❌ Không thể kết nối tới Google Sheet. Hãy kiểm tra ID Sheet hoặc quyền chia sẻ Editor cho Service Account. Chi tiết: {e}")
+                st.error(f"❌ Lỗi kết nối: {e}. Đảm bảo email qlkh-vphn11@qlkh-494715.iam.gserviceaccount.com đã được cấp quyền 'Editor' trong file Google Sheet.")
         else:
-            st.warning("⚠️ Hệ thống chưa được kết nối với Google API qua GitHub Secrets (GCP_SERVICE_ACCOUNT_JSON).")
+            st.warning("⚠️ Hệ thống chưa được kết nối với Google API. Hãy kiểm tra lại GitHub Secrets.")
 
 # --- 5. FOOTER ---
 st.divider()
